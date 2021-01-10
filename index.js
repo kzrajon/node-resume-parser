@@ -35,10 +35,10 @@ app.post('/user-resume',function(req,res,next){
        //console.log(resumeFile);
         var filename = uuid4()+'.pdf';
 	resumeFile.mv(path.resolve(__dirname+'/resume',filename), function(err) {
-    if (err){
-      return res.status(500).json(err);
-     console.log("error",err);
-   }
+	    if (err){
+	      return res.status(500).json(err);
+	     console.log("error",err);
+	   }
     
     const resume = new resumeParser(path.resolve(__dirname+'/resume',filename));
 
@@ -60,6 +60,7 @@ app.post('/user-resume',function(req,res,next){
 								return service.userLogin(data.parts.email,IP)
 								 .then((rrr)=>{
 									 //console.log(rrr);
+									let accessToken = rrr.data.access_token;
 									 return service.saveResume(data,rrr.data.access_token)
 										.then((r)=>{
 											//console.log("r",r);
@@ -86,7 +87,7 @@ app.post('/user-resume',function(req,res,next){
 				//res.status(200).send(data);
 			})
 			.catch(error => {
-				console.error(error);
+				//console.error(error);
 				return res.status(500).json("Resume can not parsable");
 			});
 			//res.end();
@@ -95,10 +96,7 @@ app.post('/user-resume',function(req,res,next){
 
 
 app.get('/',function(req,res,next){
-	const file = req.query.resume ;
-	const resume = new resumeParser('./cv/'+file);
-	resume.parseToJSON().then(d=>{return res.send(d);}).catch(e=>{return res.send(e);});
-	//return res.send("this a test");
+	return res.status(200).json("Please upload your resume in '/user-resume' URI with POST request.");
 });
 
 app.listen(PORT,()=>{
