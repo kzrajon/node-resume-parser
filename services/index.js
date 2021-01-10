@@ -6,7 +6,10 @@
 const axios = require('axios');
 const qs = require('qs');
 const service = {};
-
+const GATEWAY_URL = '';
+const BIODATA_URL = '';
+const USER_REGISTER_URL = '';
+const USER_LOGIN_URL = '';
 
 var username = password = d = null ;
 	
@@ -53,7 +56,7 @@ service.biodata = function(data){
 };
 service.saveResume = function(data,accessToken){
   this.biodata(data);
-  return  axios.post("http://gateway.jobalart.com/resume/biodata",
+  return  axios.post(BIODATA_URL,
 	   
 	   Biodata
    ,
@@ -71,7 +74,7 @@ service.userRegister = function(email){
 	while(true){
 		username = email.split("@")[0]+Math.floor(Math.random()*1000000);
 		password = email.split("@")[0]+Math.floor(Math.random()*1000000);
-		return  axios.post("http://gateway.jobalart.com/users",
+		return  axios.post(USER_REGISTER_URL,
 		 {"username":username,"email":email,"password":password,"registration_from_resume_parser":true},
 			 { headers:{"content-type":"application/json"}}
 	    )
@@ -92,7 +95,7 @@ service.userRegister = function(email){
 	
 };
 service.userLogin = function(email,ip){
-	return  axios.post("http://gateway.jobalart.com/users/login?ip="+ip,{
+	return  axios.post(USER_LOGIN_URL+"?ip="+ip,{
            email:email,password:password
 	   },
 	   {headers:{"content-type":"application/json"}}
