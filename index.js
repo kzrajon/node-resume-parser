@@ -1,106 +1,105 @@
-/*
+/**
 
-		resume parser
+       resume parser helper service
 */
 
-const express = require('express');
-const app = express();
-const resumeParser = require('simple-resume-parser');
-const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
-const helmet = require('helmet');
-const fileUpload = require('express-fileupload');
-const service = require('./services');
-const PORT = 9000;
-const uuid4 = require('uuid4');
-const cors = require('cors');
-const path = require('path');
+const axios = require('axios');
+const qs = require('qs');
+const service = {};
 
 
-
-
-app.use(bodyParser.json({limit:'1000mb',extended:true}));
-app.use(bodyParser.urlencoded({limit:'1000mb',extended: true}));
-app.use(cookieParser());
-app.use(helmet());
-app.use(fileUpload());
-app.use(cors());
-
-app.post('/user-resume',function(req,res,next){
+var username = password = d = null ;
 	
-	var accessToken = req.query.access_token?req.query.access_token:null;
-	var IP = req.query.ip?req.query.ip:null;
+var Biodata = {
 	
-	var resumeFile = req.files.resume ;
-       //console.log(resumeFile);
-        var filename = uuid4()+'.pdf';
-	resumeFile.mv(path.resolve(__dirname+'/resume',filename), function(err) {
-    if (err){
-      return res.status(500).json(err);
-     console.log("error",err);
-   }
-    
-    const resume = new resumeParser(path.resolve(__dirname+'/resume',filename));
+	full_name:"",
+	contact_email:"",
+	address:"",
+	city:"",
+	zip_post_code:"",
+	country_id:"",
+	nationality:"",
+	date_of_birth:"",
+	gender:"",
+	identity_number:"",
+	mobile_number:"",
+	another_mobile_number:"",
+	objectives:"",
+	photo:"",
+	career_description:"",
+	cover_letter:"",
+	notice_period:''
+};
+service.biodata = function(data){
+	let r = data.parts;
+	Biodata.full_name = r.name?r.name:null;
+	Biodata.contact_email = r.email?r.email:null;
+	Biodata.address = r.address?r.address:null;
+	Biodata.city = r.city?r.city:null;
+	Biodata.zip_post_code = r.zip?r.zip:null;
+	Biodata.country_id = '';
+	Biodata.nationality = r.nationality?r.nationality:null;
+	Biodata.date_of_birth = r.date_of_birth?r.date_of_birth:null;
+	Biodata.gender = r.gender?r.gender:null;
+	Biodata.identity_number = r.nid_passport?r.nid_passport:null;
+	Biodata.mobile_number = r.phone?r.phone:null;
+	Biodata.another_mobile_number = r.phone?r.phone:null;
+	Biodata.objectives = r.objective?r.objective:null;
+	Biodata.photo = '';
+	Biodata.career_description = r.carrer_description?r.carrer_description:null;
+	Biodata.cover_letter = '';
+	Biodata.notice_period = '';
+	
+};
+service.saveResume = function(data,accessToken){
+  this.biodata(data);
+  return  axios.post("http://gateway.jobalart.com/resume/biodata",
+	   
+	   Biodata
+   ,
+   {headers:{'Authorization':"Bearer "+accessToken, "content-type":"application/json"}}
+   )
+	.then((r)=>{
+		return r;
+	})
+	.catch(e=>e);
 
-	resume.parseToJSON()
-			.then(data => {
-				if(accessToken){
-					return service.saveResume(data,accessToken)
-						.then((r)=>{
-							//console.log("r",r);
-							return res.status(r.status).json({notification:"Your password already E-mail to you. Please fillup your resume."});
-						})
-						.catch(e=>e);
+};
+
+service.userRegister = function(email){
+
+	while(true){
+		username = email.split("@")[0]+Math.floor(Math.random()*1000000);
+		password = email.split("@")[0]+Math.floor(Math.random()*1000000);
+		return  axios.post("http://gateway.jobalart.com/users",
+		 {"username":username,"email":email,"password":password,"registration_from_resume_parser":true},
+			 { headers:{"content-type":"application/json"}}
+	    )
+		.then((r)=>{
+			return r ;
+		})
+		.catch((e)=>{
+			if(e.response.status == 409){
+				//console.log("error",e.response.data);
+				//d = JSON.parse(e.response.data);
+				if(e.response.data.email){
+					throw e;
 				}
-				else{
-					return service.userRegister(data.parts.email)
-						.then((rr)=>{
-							//console.log("after regis",rr);
-							if(rr.status == 201){
-								return service.userLogin(data.parts.email,IP)
-								 .then((rrr)=>{
-									 //console.log(rrr);
-									 return service.saveResume(data,rrr.data.access_token)
-										.then((r)=>{
-											//console.log("r",r);
-											return res.status(r.status).json({access_token:accessToken,notification:"Your password already E-mail to you. Please fillup your resume."});
-										})
-										.catch((e)=>{
-		//									console.log(e);
-											return res.status(e.response.status).send(e.response.data);
-											
-										});
-								 })
-								 .catch(ee=>{
-			//						 console.log(ee);
-											return res.status(ee.response.status).send(ee.response.data);
-								 });
-							}
-						})
-						.catch((er)=>{
-							return res.status(er.response.status).json("You are already registrared User. please sign in and upload your resume again.");
-						});
-				}
-				//console.log('pdf data ', data);
-				//console.log("email",data.parts.email);
-				//res.status(200).send(data);
-			})
-			.catch(error => {
-				console.error(error);
-				return res.status(500).json("Resume can not parsable");
-			});
-			//res.end();
-  });
-});
-
-
-app.get('/',function(req,res,next){
-	const file = req.query.resume ;
-	const resume = new resumeParser('./cv/'+file);
-	resume.parseToJSON().then(d=>{return res.send(d);}).catch(e=>{return res.send(e);});
-	//return res.send("this a test");
-});
-
-app.listen(PORT,()=>{
-	console.log("server start at "+PORT);
-});
+			}
+			
+		});
+	}
+	
+};
+service.userLogin = function(email,ip){
+	return  axios.post("http://gateway.jobalart.com/users/login?ip="+ip,{
+           email:email,password:password
+	   },
+	   {headers:{"content-type":"application/json"}}
+	   )
+		.then((r)=>{
+			return r;
+		})
+		.catch(e=>e);
+};
+module.exports = service ;
