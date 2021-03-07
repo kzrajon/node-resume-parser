@@ -54,18 +54,11 @@ service.biodata = function(data){
 	Biodata.notice_period = '';
 	
 };
-service.saveResume = function(data,accessToken){
+service.saveResume = async function(data,accessToken){
   this.biodata(data);
-  return  axios.post(BIODATA_URL,
-	   
-	   Biodata
-   ,
-   {headers:{'Authorization':"Bearer "+accessToken, "content-type":"application/json"}}
-   )
-	.then((r)=>{
-		return r;
-	})
-	.catch(e=>e);
+  return  axios.post(BIODATA_URL,Biodata,{headers:{'Authorization':"Bearer "+accessToken, "content-type":"application/json"}})
+	  .then(r=>r)
+	  .catch(e=>e);
 
 };
 
@@ -74,35 +67,22 @@ service.userRegister = function(email){
 	while(true){
 		username = email.split("@")[0]+Math.floor(Math.random()*1000000);
 		password = email.split("@")[0]+Math.floor(Math.random()*1000000);
-		return  axios.post(USER_REGISTER_URL,
-		 {"username":username,"email":email,"password":password,"registration_from_resume_parser":true},
-			 { headers:{"content-type":"application/json"}}
-	    )
-		.then((r)=>{
-			return r ;
-		})
-		.catch((e)=>{
-			if(e.response.status == 409){
-				//console.log("error",e.response.data);
-				//d = JSON.parse(e.response.data);
-				if(e.response.data.email){
-					throw e;
+		return  axios.post(USER_REGISTER_URL,{"username":username,"email":email,"password":password,"registration_from_resume_parser":true},{ headers:{"content-type":"application/json"}})
+		       .then(r=>r)
+		       .catch((e)=>{
+				if(e.response.status == 409){
+					if(e.response.data.email){
+						throw e;
+					}
 				}
-			}
 			
-		});
+		        });
 	}
 	
 };
 service.userLogin = function(email,ip){
-	return  axios.post(USER_LOGIN_URL+"?ip="+ip,{
-           email:email,password:password
-	   },
-	   {headers:{"content-type":"application/json"}}
-	   )
-		.then((r)=>{
-			return r;
-		})
+	return  axios.post(USER_LOGIN_URL+"?ip="+ip,{email:email,password:password},{headers:{"content-type":"application/json"}})
+		.then(r=>r)
 		.catch(e=>e);
 };
 module.exports = service ;
